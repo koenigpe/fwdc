@@ -1,0 +1,4 @@
+Pytest
+requests
+beautifulsoup4
+tinydb
