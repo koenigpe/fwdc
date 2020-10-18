@@ -1,13 +1,15 @@
 import os
 import time
+import requests
+import urllib3
+from bs4 import BeautifulSoup
 
 from notification_sink import Notification_sink
 from store.tinyDbStore import TinyDbStore
 
 
 def main():
-    import requests
-    from bs4 import BeautifulSoup
+
 
     db = TinyDbStore(os.environ['DB_FILE'])
     sink = Notification_sink(
@@ -38,24 +40,28 @@ def main():
     ]
 
     for task in task_list:
-        page = requests.get(task['url'])
-        soup = BeautifulSoup(page.content, 'html.parser')
-        value = task['extractor'](soup)
-        last_value = db.get_last(task['tag'])
-        print(value, last_value)
-        if last_value is not None and task['condition'](last_value, value):
-            print("Sending notification: " + task['tag'])
-            sink.notify(
-                "Subject: "+task['tag']+" triggered \n" +
-                "Tag: " + task['tag'] + "\n" +
-                "Old value: " + str(last_value) + "\n" +
-                "Current value: " + str(value))
-        db.put(task['tag'], value)
-        print(task['tag'], value)
+        try:
+            page = requests.get(task['url'])
+            soup = BeautifulSoup(page.content, 'html.parser')
+            value = task['extractor'](soup)
+            last_value = db.get_last(task['tag'])
+            print(value, last_value)
+        except urllib3.exceptions.MaxRetryError:
+            sink.notify("unable to fetch tag: " + task['tag'])
+        else:
+            if last_value is not None and task['condition'](last_value, value):
+                print("Sending notification: " + task['tag'])
+                sink.notify(
+                    "Subject: "+task['tag']+" triggered \n" +
+                    "Tag: " + task['tag'] + "\n" +
+                    "Old value: " + str(last_value) + "\n" +
+                    "Current value: " + str(value))
+            db.put(task['tag'], value)
+            print(task['tag'], value)
 
 if __name__ == '__main__':
     while True:
         main()
-        time.sleep(360)
+        time.sleep(3600)
 
 

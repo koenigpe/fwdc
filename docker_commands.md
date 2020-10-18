@@ -39,6 +39,6 @@ docker logs <<id>>
 
 docker build -t fwdc:0.1 .
  
-docker container run -dit --name fwdc --env-file /home/pi/.env -v /tmp/dstmp:/tmp/dstmp fwdc:0.1
+docker container run -dit --name fwdc --env-file /home/pi/.env -v /tmp/ds218:/dstmp fwdc:0.1
 
 
